@@ -7,6 +7,8 @@ var tests = new List<(string Name, Func<Task> Run)>
 {
     ("SafeVersion rejects traversal", TestSafeVersionAsync),
     ("Release asset selection is exact", TestAssetSelectionAsync),
+    ("Application release versions compare semantically", TestApplicationReleaseVersionsAsync),
+    ("Application update manifest is strict", TestApplicationUpdateManifestAsync),
     ("Empty reports are unhealthy", TestEmptyReportAsync),
     ("Healthy reports require both services", TestHealthReportAsync),
     ("Coverage score prioritizes essential endpoints", TestCoverageScoreAsync),
@@ -93,6 +95,63 @@ static Task TestAssetSelectionAsync()
     var asset = GitHubReleaseClient.SelectAsset(ComponentKind.Zapret, release);
     AssertEqual("zapret-discord-youtube-1.10.1.zip", asset.Name);
     return Task.CompletedTask;
+}
+
+static Task TestApplicationReleaseVersionsAsync()
+{
+    AssertTrue(ReleaseVersion.IsNewer("v1.10.0", "1.9.9"));
+    AssertFalse(ReleaseVersion.IsNewer("v1.1.0", "1.1.0"));
+    AssertEqual("v2.3.4", ReleaseVersion.Normalize("2.3.4"));
+    AssertThrows<InvalidDataException>(() => ReleaseVersion.Parse("1.2.0-beta"));
+    return Task.CompletedTask;
+}
+
+static Task TestApplicationUpdateManifestAsync()
+{
+    var manifest = new ApplicationUpdateManifest
+    {
+        SchemaVersion = 1,
+        ReleaseVersion = "1.1.0",
+        BuildVersion = "1.2.13.0",
+        Packages =
+        [
+            CreatePackage("win-x64"),
+            CreatePackage("win-arm64")
+        ]
+    };
+    ApplicationUpdateService.ValidateManifest(manifest, "v1.1.0");
+    var selected = ApplicationUpdateService.SelectPackage(manifest);
+    AssertTrue(selected.RuntimeIdentifier is "win-x64" or "win-arm64");
+    AssertThrows<InvalidDataException>(() => ApplicationUpdateService.ValidateManifest(manifest, "v1.2.0"));
+    AssertThrows<InvalidDataException>(() => ApplicationUpdateService.ValidateManifest(
+        new ApplicationUpdateManifest
+        {
+            SchemaVersion = 1,
+            ReleaseVersion = "1.1.0",
+            BuildVersion = "1.2.13.0",
+            Packages =
+            [
+                new ApplicationPackageManifest
+                {
+                    RuntimeIdentifier = "win-x64",
+                    AssetName = "FlowsealManager-win-x64.zip",
+                    Sha256 = "unsafe",
+                    Size = 2_000_000,
+                    Executable = "FlowsealManager.exe"
+                }
+            ]
+        },
+        "v1.1.0"));
+    return Task.CompletedTask;
+
+    static ApplicationPackageManifest CreatePackage(string runtimeIdentifier) => new()
+    {
+        RuntimeIdentifier = runtimeIdentifier,
+        AssetName = $"FlowsealManager-{runtimeIdentifier}.zip",
+        Sha256 = new string('a', 64),
+        Size = 2_000_000,
+        Executable = "FlowsealManager.exe"
+    };
 }
 
 static Task TestEmptyReportAsync()

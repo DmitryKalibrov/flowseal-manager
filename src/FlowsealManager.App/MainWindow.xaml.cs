@@ -26,6 +26,7 @@ public partial class MainWindow : Window
     private readonly HttpClient _downloadClient;
     private readonly HttpClient _probeClient;
     private readonly ComponentUpdater _updater;
+    private readonly ApplicationUpdateService _applicationUpdater;
     private readonly ComponentProcessManager _processes;
     private readonly ConnectivityProbe _probe;
     private readonly StrategySelector _selector;
@@ -78,6 +79,7 @@ public partial class MainWindow : Window
 
         var releases = new GitHubReleaseClient(_downloadClient);
         _updater = new ComponentUpdater(_downloadClient, releases, _paths, _logger);
+        _applicationUpdater = new ApplicationUpdateService(_downloadClient, releases, _paths, _logger);
         _processes = new ComponentProcessManager(_paths, _logger);
         _probe = new ConnectivityProbe(_probeClient);
         _zapretCustomization = new ZapretCustomizationService();
@@ -87,6 +89,8 @@ public partial class MainWindow : Window
         _startup = new StartupTaskManager(Environment.ProcessPath ?? throw new InvalidOperationException("Unknown executable path."));
 
         _notifyIcon = CreateNotifyIcon(!visualQa);
+        ManagerVersionText.Text =
+            $"FLOWSEAL MANAGER / РЕЛИЗ {ApplicationVersion.ReleaseTag} / СБОРКА {ApplicationVersion.Build}";
         _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
         _statusTimer.Tick += (_, _) => RefreshComponentStatus();
         if (!visualQa)
@@ -136,6 +140,11 @@ public partial class MainWindow : Window
         _initializing = false;
         await RefreshLegacyServicesAsync();
 
+        if (_settings.UpdateManagerAutomatically && await UpdateApplicationAsync())
+        {
+            return;
+        }
+
         if (_settings.CheckUpdatesOnStart)
         {
             await UpdateComponentsAsync();
@@ -178,6 +187,58 @@ public partial class MainWindow : Window
         RefreshStrategies();
         RefreshZapretCustomization();
         RefreshComponentStatus();
+    }
+
+    private async Task<bool> UpdateApplicationAsync()
+    {
+        try
+        {
+            SetGlobalStatus($"Проверяю Flowseal Manager {ApplicationVersion.ReleaseTag}…", null);
+            var executable = Environment.ProcessPath
+                ?? throw new InvalidOperationException("Не удалось определить путь приложения.");
+            if (!string.Equals(
+                    Path.GetFileName(executable),
+                    "FlowsealManager.exe",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                await _logger.InfoAsync("Самообновление доступно только в готовой сборке приложения.");
+                return false;
+            }
+            var prepared = await _applicationUpdater.PrepareLatestAsync(
+                ApplicationVersion.Release,
+                executable,
+                _startMinimized,
+                _lifetime.Token);
+            if (prepared is null)
+            {
+                await _logger.InfoAsync(
+                    $"Flowseal Manager {ApplicationVersion.ReleaseTag}: установлена актуальная версия.",
+                    _lifetime.Token);
+                return false;
+            }
+
+            await _logger.InfoAsync(
+                $"Flowseal Manager {prepared.ReleaseVersion} проверен и готов к установке.",
+                _lifetime.Token);
+            var startInfo = new ProcessStartInfo(prepared.RunnerExecutable)
+            {
+                UseShellExecute = true,
+                WorkingDirectory = Path.GetDirectoryName(prepared.RunnerExecutable)!
+            };
+            startInfo.ArgumentList.Add("--apply-update");
+            startInfo.ArgumentList.Add(prepared.PlanPath);
+            startInfo.ArgumentList.Add(prepared.PlanSha256);
+            _ = Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Не удалось запустить установку обновления.");
+            ExitApplication();
+            return true;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            await _logger.InfoAsync($"Самообновление пропущено: {exception.Message}");
+            SetGlobalStatus($"Самообновление пропущено: {exception.Message}", false);
+            return false;
+        }
     }
 
     private async Task UpdateComponentAsync(ComponentKind component)
@@ -369,6 +430,7 @@ public partial class MainWindow : Window
     private void ApplySettingsToControls()
     {
         StartAtLogonCheck.IsChecked = _settings.StartAtLogon;
+        UpdateManagerCheck.IsChecked = _settings.UpdateManagerAutomatically;
         CheckUpdatesCheck.IsChecked = _settings.CheckUpdatesOnStart;
         StartTelegramCheck.IsChecked = _settings.StartTelegramOnLaunch;
         StartZapretCheck.IsChecked = _settings.StartZapretOnLaunch;
@@ -612,7 +674,10 @@ public partial class MainWindow : Window
             _paths.ZapretDirectory(_settings.ZapretVersion));
 
     private async void UpdateButton_Click(object sender, RoutedEventArgs e) =>
-        await ExecuteExclusiveAsync(UpdateComponentsAsync);
+        await ExecuteExclusiveAsync(async () =>
+        {
+            if (!await UpdateApplicationAsync()) await UpdateComponentsAsync();
+        });
 
     private async void OpenCustomizationButton_Click(object sender, RoutedEventArgs e)
     {
@@ -662,6 +727,7 @@ public partial class MainWindow : Window
         var draft = new AppSettings
         {
             StartAtLogon = _settings.StartAtLogon,
+            UpdateManagerAutomatically = _settings.UpdateManagerAutomatically,
             CheckUpdatesOnStart = _settings.CheckUpdatesOnStart,
             StartTelegramOnLaunch = _settings.StartTelegramOnLaunch,
             StartZapretOnLaunch = _settings.StartZapretOnLaunch,
@@ -681,6 +747,7 @@ public partial class MainWindow : Window
             }
 
             _settings.StartAtLogon = draft.StartAtLogon;
+            _settings.UpdateManagerAutomatically = draft.UpdateManagerAutomatically;
             _settings.CheckUpdatesOnStart = draft.CheckUpdatesOnStart;
             _settings.StartTelegramOnLaunch = draft.StartTelegramOnLaunch;
             _settings.StartZapretOnLaunch = draft.StartZapretOnLaunch;
@@ -691,7 +758,7 @@ public partial class MainWindow : Window
 
             if (dialog.CheckUpdatesRequested)
             {
-                await UpdateComponentsAsync();
+                if (!await UpdateApplicationAsync()) await UpdateComponentsAsync();
             }
         });
     }
@@ -857,6 +924,7 @@ public partial class MainWindow : Window
             }
 
             _settings.CheckUpdatesOnStart = CheckUpdatesCheck.IsChecked == true;
+            _settings.UpdateManagerAutomatically = UpdateManagerCheck.IsChecked == true;
             _settings.StartTelegramOnLaunch = StartTelegramCheck.IsChecked == true;
             _settings.StartZapretOnLaunch = StartZapretCheck.IsChecked == true;
             _settings.AutoSelectStrategy = AutoStrategyCheck.IsChecked == true;

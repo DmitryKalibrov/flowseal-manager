@@ -4,6 +4,8 @@ public sealed class AppSettings
 {
     public bool CheckUpdatesOnStart { get; set; } = true;
 
+    public bool UpdateManagerAutomatically { get; set; } = true;
+
     public bool StartAtLogon { get; set; }
 
     public bool StartTelegramOnLaunch { get; set; } = true;

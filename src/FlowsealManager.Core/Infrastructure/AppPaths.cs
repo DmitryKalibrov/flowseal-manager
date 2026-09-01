@@ -30,6 +30,10 @@ public sealed class AppPaths
 
     public string HostsBackupsRoot => Path.Combine(BackupsRoot, "hosts");
 
+    public string ApplicationBackupsRoot => Path.Combine(BackupsRoot, "application");
+
+    public string ApplicationUpdatesRoot => Path.Combine(UserDataRoot, "updates");
+
     public string SettingsFile => Path.Combine(UserDataRoot, "settings.json");
 
     public string LogFile => Path.Combine(LogsRoot, "manager.log");
@@ -44,6 +48,8 @@ public sealed class AppPaths
         Directory.CreateDirectory(TempRoot);
         Directory.CreateDirectory(LogsRoot);
         Directory.CreateDirectory(HostsBackupsRoot);
+        Directory.CreateDirectory(ApplicationBackupsRoot);
+        Directory.CreateDirectory(ApplicationUpdatesRoot);
     }
 
     public string TelegramDirectory(string version) =>

@@ -624,8 +624,11 @@
                                 <CheckBox x:Name="StartAtLogonCheck"
                                           Content="Запускать менеджер при входе в Windows"
                                           Click="SettingsCheckBox_Click" />
+                                <CheckBox x:Name="UpdateManagerCheck"
+                                          Content="Автоматически обновлять Flowseal Manager"
+                                          Click="SettingsCheckBox_Click" />
                                 <CheckBox x:Name="CheckUpdatesCheck"
-                                          Content="Проверять официальные релизы при запуске"
+                                          Content="Обновлять компоненты Flowseal при запуске"
                                           Click="SettingsCheckBox_Click" />
                                 <CheckBox x:Name="StartTelegramCheck"
                                           Content="Запускать TG WS Proxy вместе с менеджером"
@@ -660,7 +663,8 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="FLOWSEAL MANAGER / ВЕРСИЯ 1.2.12"
+                                <TextBlock x:Name="ManagerVersionText"
+                                           Text="FLOWSEAL MANAGER"
                                            Style="{StaticResource MonoLabel}"
                                            Foreground="#8C93A0" />
                                 <TextBlock Text="Голосовой UDP Discord окончательно проверяется фактическим звонком."

@@ -33,7 +33,20 @@ public sealed class GitHubReleaseClient
             _ => throw new ArgumentOutOfRangeException(nameof(component), component, null)
         };
 
-        var uri = $"https://api.github.com/repos/Flowseal/{repository}/releases/latest";
+        return await GetLatestAsync("Flowseal", repository, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<GitHubRelease> GetLatestAsync(
+        string owner,
+        string repository,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsSafeRepositoryPart(owner) || !IsSafeRepositoryPart(repository))
+        {
+            throw new ArgumentException("Invalid GitHub repository name.");
+        }
+
+        var uri = $"https://api.github.com/repos/{owner}/{repository}/releases/latest";
         using var response = await _httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
             .ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
@@ -42,6 +55,10 @@ public sealed class GitHubReleaseClient
         return await JsonSerializer.DeserializeAsync<GitHubRelease>(stream, cancellationToken: cancellationToken)
             .ConfigureAwait(false) ?? throw new InvalidDataException("GitHub returned an empty release document.");
     }
+
+    private static bool IsSafeRepositoryPart(string value) =>
+        !string.IsNullOrWhiteSpace(value) &&
+        value.All(character => char.IsAsciiLetterOrDigit(character) || character is '-' or '_' or '.');
 
     public static GitHubAsset SelectAsset(ComponentKind component, GitHubRelease release)
     {

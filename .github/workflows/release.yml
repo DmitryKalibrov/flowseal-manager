@@ -1,0 +1,67 @@
+name: Выпуск Flowseal Manager
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Получить исходный код
+        uses: actions/checkout@v4
+
+      - name: Установить .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Проверить номер версии
+        shell: pwsh
+        run: |
+          [xml]$props = Get-Content -LiteralPath Directory.Build.props
+          $expected = 'v' + [string]$props.Project.PropertyGroup.ReleaseVersion
+          if ('${{ github.event_name }}' -eq 'push' -and '${{ github.ref_name }}' -ne $expected) {
+            throw "Тег ${{ github.ref_name }} не совпадает с ReleaseVersion $expected."
+          }
+
+      - name: Восстановить зависимости
+        run: dotnet restore FlowsealManager.sln
+
+      - name: Собрать и упаковать релиз
+        shell: pwsh
+        run: .\scripts\package-release.ps1
+
+      - name: Сохранить проверенные пакеты сборки
+        uses: actions/upload-artifact@v4
+        with:
+          name: FlowsealManager-${{ github.ref_name }}
+          path: release/*
+          if-no-files-found: error
+
+      - name: Создать GitHub Release
+        if: github.event_name == 'push'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [xml]$props = Get-Content -LiteralPath Directory.Build.props
+          $releaseVersion = [string]$props.Project.PropertyGroup.ReleaseVersion
+          $notes = ".\RELEASE-$releaseVersion.md"
+          if (-not (Test-Path -LiteralPath $notes)) {
+            throw "Отсутствует русское описание выпуска $notes."
+          }
+          gh release create '${{ github.ref_name }}' `
+            '.\release\FlowsealManager-win-x64.zip' `
+            '.\release\FlowsealManager-win-arm64.zip' `
+            '.\release\update-manifest.json' `
+            '.\release\SHA256SUMS.txt' `
+            --verify-tag `
+            --notes-file $notes `
+            --latest `
+            --title "Flowseal Manager ${{ github.ref_name }}"

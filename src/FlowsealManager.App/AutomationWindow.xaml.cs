@@ -11,6 +11,7 @@ public partial class AutomationWindow : Window
         InitializeComponent();
         Settings = settings;
         StartAtLogonCheck.IsChecked = settings.StartAtLogon;
+        UpdateManagerCheck.IsChecked = settings.UpdateManagerAutomatically;
         CheckUpdatesCheck.IsChecked = settings.CheckUpdatesOnStart;
         StartTelegramCheck.IsChecked = settings.StartTelegramOnLaunch;
         StartZapretCheck.IsChecked = settings.StartZapretOnLaunch;
@@ -24,6 +25,7 @@ public partial class AutomationWindow : Window
     private void SaveButton_Click(object sender, RoutedEventArgs e)
     {
         Settings.StartAtLogon = StartAtLogonCheck.IsChecked == true;
+        Settings.UpdateManagerAutomatically = UpdateManagerCheck.IsChecked == true;
         Settings.CheckUpdatesOnStart = CheckUpdatesCheck.IsChecked == true;
         Settings.StartTelegramOnLaunch = StartTelegramCheck.IsChecked == true;
         Settings.StartZapretOnLaunch = StartZapretCheck.IsChecked == true;

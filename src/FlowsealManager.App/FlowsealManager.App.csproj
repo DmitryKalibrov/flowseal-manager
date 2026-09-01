@@ -10,7 +10,6 @@
     <ApplicationIcon>Assets\FlowsealManager.ico</ApplicationIcon>
     <AssemblyName>FlowsealManager</AssemblyName>
     <RootNamespace>FlowsealManager.App</RootNamespace>
-    <Version>1.2.12</Version>
     <AssemblyTitle>Flowseal Manager</AssemblyTitle>
     <Product>Flowseal Manager</Product>
     <Description>Manager for official Flowseal TG WS Proxy and zapret releases</Description>
@@ -21,5 +20,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\FlowsealManager.ico" />
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>ReleaseVersion</_Parameter1>
+      <_Parameter2>$(ReleaseVersion)</_Parameter2>
+    </AssemblyAttribute>
   </ItemGroup>
 </Project>
