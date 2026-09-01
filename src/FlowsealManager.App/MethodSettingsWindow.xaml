@@ -1,0 +1,195 @@
+<Window x:Class="FlowsealManager.App.MethodSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Параметры метода"
+        Width="980"
+        Height="720"
+        Background="{StaticResource PaperBrush}"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
+    <Border BorderBrush="#343A46" BorderThickness="1" Background="{StaticResource PaperBrush}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="44" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Background="{StaticResource InkBrush}"
+                  MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Margin="16,0,0,0" VerticalAlignment="Center" Orientation="Horizontal">
+                    <Border Width="18" Height="18" Margin="0,0,10,0" Background="{StaticResource PrimaryBrush}">
+                        <Grid>
+                            <Rectangle Width="4" Height="4" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="3" />
+                            <Rectangle Width="4" Height="4" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="3" />
+                        </Grid>
+                    </Border>
+                    <TextBlock Text="FLOWSEAL MANAGER / ПАРАМЕТРЫ МЕТОДА"
+                               Foreground="{StaticResource WhiteBrush}"
+                               Style="{StaticResource MonoLabel}" />
+                </StackPanel>
+                <Button Grid.Column="1"
+                        ToolTip="Закрыть"
+                        Style="{StaticResource TitleBarButton}"
+                        Click="CloseButton_Click">
+                    <Viewbox Width="14" Height="14">
+                        <Canvas Width="14" Height="14">
+                            <Path Data="M 3,3 L 11,11 M 11,3 L 3,11"
+                                  Stroke="White"
+                                  StrokeThickness="1.25" />
+                        </Canvas>
+                    </Viewbox>
+                </Button>
+            </Grid>
+
+            <ScrollViewer Grid.Row="1"
+                          VerticalScrollBarVisibility="Hidden"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="28,24,28,20">
+                    <TextBlock Text="04 / ПАРАМЕТРЫ МЕТОДА"
+                               Style="{StaticResource MonoLabel}"
+                               Foreground="{StaticResource PrimaryBrush}" />
+                    <TextBlock Text="Тонкая настройка zapret"
+                               Style="{StaticResource SectionHeading}"
+                               Margin="0,7,0,0" />
+                    <TextBlock Margin="0,7,0,20"
+                               Text="Режимы применяются поверх выбранного general*.bat и участвуют в автоподборе. Домены и IP сохраняются как заданные цели; для IP поддерживается CIDR."
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource MutedBrush}"
+                               LineHeight="19" />
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="0.9*" />
+                            <ColumnDefinition Width="22" />
+                            <ColumnDefinition Width="1.1*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel>
+                            <TextBlock Text="ОФИЦИАЛЬНЫЕ РЕЖИМЫ" Style="{StaticResource MonoLabel}" />
+                            <TextBlock Text="Игровой фильтр" Margin="0,13,0,6" FontWeight="SemiBold" />
+                            <ComboBox x:Name="GameFilterCombo" />
+                            <TextBlock Text="Область IP-set" Margin="0,13,0,6" FontWeight="SemiBold" />
+                            <ComboBox x:Name="IpSetModeCombo" />
+                            <TextBlock Text="UDP-подмена Discord" Margin="0,13,0,6" FontWeight="SemiBold" />
+                            <ComboBox x:Name="DiscordFakeCombo" />
+                            <TextBlock Text="UDP-подмена игрового фильтра" Margin="0,13,0,6" FontWeight="SemiBold" />
+                            <ComboBox x:Name="GameFakeCombo" />
+                            <TextBlock Margin="0,11,0,0"
+                                       Text="Автоподбор перебирает игровой фильтр и область IP-set. UDP-подмены требуют проверки звонком или игрой."
+                                       TextWrapping="Wrap"
+                                       Foreground="{StaticResource MutedBrush}"
+                                       FontSize="12" />
+                        </StackPanel>
+
+                        <Grid Grid.Column="2">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="ДОМЕНЫ В ОБХОД" Style="{StaticResource MonoLabel}" />
+                                    <TextBox x:Name="IncludedDomainsBox"
+                                             Height="112"
+                                             Margin="0,8,0,0"
+                                             AcceptsReturn="True"
+                                             TextWrapping="NoWrap"
+                                             VerticalScrollBarVisibility="Hidden"
+                                             Style="{StaticResource LightEditor}" />
+                                    <TextBlock Text="example.org" Margin="0,5,0,0" Foreground="{StaticResource MutedBrush}" FontFamily="Cascadia Mono, Consolas" FontSize="11" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="ДОМЕНЫ-ИСКЛЮЧЕНИЯ" Style="{StaticResource MonoLabel}" />
+                                    <TextBox x:Name="ExcludedDomainsBox"
+                                             Height="112"
+                                             Margin="0,8,0,0"
+                                             AcceptsReturn="True"
+                                             TextWrapping="NoWrap"
+                                             VerticalScrollBarVisibility="Hidden"
+                                             Style="{StaticResource LightEditor}" />
+                                    <TextBlock Text="static.example.org" Margin="0,5,0,0" Foreground="{StaticResource MutedBrush}" FontFamily="Cascadia Mono, Consolas" FontSize="11" />
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid Grid.Row="1" Margin="0,17,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="IP / ПОДСЕТИ В ОБХОД" Style="{StaticResource MonoLabel}" />
+                                    <TextBox x:Name="IncludedIpRangesBox"
+                                             Height="112"
+                                             Margin="0,8,0,0"
+                                             AcceptsReturn="True"
+                                             TextWrapping="NoWrap"
+                                             VerticalScrollBarVisibility="Hidden"
+                                             Style="{StaticResource LightEditor}" />
+                                    <TextBlock Text="198.51.100.0/24" Margin="0,5,0,0" Foreground="{StaticResource MutedBrush}" FontFamily="Cascadia Mono, Consolas" FontSize="11" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="IP / ПОДСЕТИ-ИСКЛЮЧЕНИЯ" Style="{StaticResource MonoLabel}" />
+                                    <TextBox x:Name="ExcludedIpRangesBox"
+                                             Height="112"
+                                             Margin="0,8,0,0"
+                                             AcceptsReturn="True"
+                                             TextWrapping="NoWrap"
+                                             VerticalScrollBarVisibility="Hidden"
+                                             Style="{StaticResource LightEditor}" />
+                                    <TextBlock Text="203.0.113.15/32" Margin="0,5,0,0" Foreground="{StaticResource MutedBrush}" FontFamily="Cascadia Mono, Consolas" FontSize="11" />
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+
+                    <TextBlock x:Name="ValidationText"
+                               Margin="0,18,0,0"
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource DangerBrush}"
+                               FontWeight="SemiBold"
+                               Visibility="Collapsed" />
+                </StackPanel>
+            </ScrollViewer>
+
+            <Border Grid.Row="2"
+                    Padding="20,14"
+                    Background="{StaticResource WhiteBrush}"
+                    BorderBrush="#D4D1C9"
+                    BorderThickness="0,1,0,0">
+                <Grid>
+                    <WrapPanel HorizontalAlignment="Left">
+                        <Button Content="Hosts Zapret"
+                                Style="{StaticResource SecondaryButton}"
+                                Click="OpenHostsSettingsButton_Click" />
+                        <Button Content="Папка списков"
+                                Style="{StaticResource SecondaryButton}"
+                                Click="OpenListsButton_Click" />
+                    </WrapPanel>
+                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                        <Button Content="Отмена"
+                                Style="{StaticResource SecondaryButton}"
+                                Click="CloseButton_Click" />
+                        <Button Content="Сохранить"
+                                Style="{StaticResource BlueButton}"
+                                Click="SaveButton_Click" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

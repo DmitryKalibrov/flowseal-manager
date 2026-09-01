@@ -1,0 +1,100 @@
+<Window x:Class="FlowsealManager.App.AutomationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Автоматизация"
+        Width="650"
+        Height="510"
+        ResizeMode="NoResize"
+        Background="{StaticResource PaperBrush}"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        ShowInTaskbar="False"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
+    <Border BorderBrush="#343A46" BorderThickness="1" Background="{StaticResource PaperBrush}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="44" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Background="{StaticResource InkBrush}"
+                  MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Margin="16,0,0,0"
+                           VerticalAlignment="Center"
+                           Text="FLOWSEAL MANAGER / АВТОМАТИЗАЦИЯ"
+                           Foreground="{StaticResource WhiteBrush}"
+                           Style="{StaticResource MonoLabel}" />
+                <Button Grid.Column="1"
+                        ToolTip="Закрыть"
+                        Style="{StaticResource TitleBarButton}"
+                        Click="CloseButton_Click">
+                    <Viewbox Width="14" Height="14">
+                        <Canvas Width="14" Height="14">
+                            <Path Data="M 3,3 L 11,11 M 11,3 L 3,11" Stroke="White" StrokeThickness="1.25" />
+                        </Canvas>
+                    </Viewbox>
+                </Button>
+            </Grid>
+
+            <StackPanel Grid.Row="1" Margin="30,26">
+                <TextBlock Text="05 / АВТОМАТИЗАЦИЯ"
+                           Style="{StaticResource MonoLabel}"
+                           Foreground="{StaticResource PrimaryBrush}" />
+                <TextBlock Text="Работа в фоне"
+                           Style="{StaticResource SectionHeading}"
+                           Margin="0,7,0,5" />
+                <TextBlock Text="Управление запуском компонентов, обновлениями и автоматической сменой профиля."
+                           TextWrapping="Wrap"
+                           Foreground="{StaticResource MutedBrush}" />
+
+                <Border Margin="0,20,0,0"
+                        Padding="18,12"
+                        Background="{StaticResource WhiteBrush}"
+                        BorderBrush="#D4D1C9"
+                        BorderThickness="1"
+                        CornerRadius="5">
+                    <StackPanel>
+                        <CheckBox x:Name="StartAtLogonCheck" Content="Запускать менеджер при входе в Windows" />
+                        <CheckBox x:Name="CheckUpdatesCheck" Content="Проверять официальные релизы при запуске" />
+                        <CheckBox x:Name="StartTelegramCheck" Content="Запускать TG WS Proxy вместе с менеджером" />
+                        <CheckBox x:Name="StartZapretCheck" Content="Запускать zapret вместе с менеджером" />
+                        <CheckBox x:Name="AutoStrategyCheck" Content="Менять стратегию после трёх сбоев" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock x:Name="ValidationText"
+                           Margin="0,12,0,0"
+                           Foreground="{StaticResource DangerBrush}"
+                           TextWrapping="Wrap"
+                           Visibility="Collapsed" />
+            </StackPanel>
+
+            <Border Grid.Row="2"
+                    Padding="20,14"
+                    Background="{StaticResource WhiteBrush}"
+                    BorderBrush="#D4D1C9"
+                    BorderThickness="0,1,0,0">
+                <Grid>
+                    <Button HorizontalAlignment="Left"
+                            Content="Проверить обновления"
+                            Style="{StaticResource SecondaryButton}"
+                            Click="CheckUpdatesButton_Click" />
+                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                        <Button Content="Отмена"
+                                Style="{StaticResource SecondaryButton}"
+                                Click="CloseButton_Click" />
+                        <Button Content="Сохранить"
+                                Style="{StaticResource BlueButton}"
+                                Click="SaveButton_Click" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

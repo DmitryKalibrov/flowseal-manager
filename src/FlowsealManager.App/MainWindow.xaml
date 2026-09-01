@@ -1,0 +1,699 @@
+<Window x:Class="FlowsealManager.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="Flowseal Manager"
+        Icon="Assets/FlowsealManager.ico"
+        Width="1100"
+        Height="760"
+        MinWidth="920"
+        MinHeight="620"
+        Background="{StaticResource InkBrush}"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        StateChanged="MainWindow_StateChanged"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0"
+                            CornerRadius="0"
+                            GlassFrameThickness="0"
+                            ResizeBorderThickness="7"
+                            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Border BorderBrush="#343A46" BorderThickness="1" Background="{StaticResource PaperBrush}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="44" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0"
+                  Background="{StaticResource InkBrush}"
+                  MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Margin="16,0,0,0" VerticalAlignment="Center" Orientation="Horizontal">
+                    <Border Width="18" Height="18" Margin="0,0,10,0" Background="{StaticResource PrimaryBrush}">
+                        <Grid>
+                            <Rectangle Width="4" Height="4" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="3" />
+                            <Rectangle Width="4" Height="4" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="3" />
+                        </Grid>
+                    </Border>
+                    <TextBlock Text="FLOWSEAL MANAGER"
+                               Foreground="{StaticResource WhiteBrush}"
+                               Style="{StaticResource MonoLabel}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button ToolTip="Свернуть"
+                            Style="{StaticResource TitleBarButton}"
+                            Click="MinimizeButton_Click">
+                        <Viewbox Width="14" Height="14">
+                            <Canvas Width="14" Height="14">
+                                <Path Data="M 2.5,7.5 L 11.5,7.5"
+                                      Stroke="White"
+                                      StrokeThickness="1.35"
+                                      StrokeStartLineCap="Square"
+                                      StrokeEndLineCap="Square" />
+                            </Canvas>
+                        </Viewbox>
+                    </Button>
+                    <Button ToolTip="Свернуть в трей"
+                            Style="{StaticResource TitleBarButton}"
+                            Click="CloseWindowButton_Click">
+                        <Viewbox Width="14" Height="14">
+                            <Canvas Width="14" Height="14">
+                                <Path Data="M 3,3 L 11,11 M 11,3 L 3,11"
+                                      Stroke="White"
+                                      StrokeThickness="1.25"
+                                      StrokeStartLineCap="Square"
+                                      StrokeEndLineCap="Square" />
+                            </Canvas>
+                        </Viewbox>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <ScrollViewer Grid.Row="1"
+                          VerticalScrollBarVisibility="Hidden"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel>
+                    <Grid x:Name="HeroPanel"
+                          Height="300"
+                          ClipToBounds="True"
+                          Background="{StaticResource PrimaryBrush}">
+                        <Rectangle Fill="{StaticResource PixelGridBrush}" />
+                        <Grid Margin="34,30,34,32">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.55*" />
+                                <ColumnDefinition Width="34" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="ЕДИНЫЙ ЦЕНТР."
+                                           Foreground="{StaticResource WhiteBrush}"
+                                           FontFamily="Segoe UI Variable Display, Segoe UI"
+                                           FontSize="48"
+                                           FontWeight="Black"
+                                           LineHeight="52" />
+                                <TextBlock Margin="3,18,0,0"
+                                           MaxWidth="620"
+                                           Text="Telegram, YouTube и Discord — запуск, обновления и мониторинг в одном приложении."
+                                           TextWrapping="Wrap"
+                                           Foreground="#E2E8FF"
+                                           FontSize="15"
+                                           LineHeight="22" />
+                            </StackPanel>
+
+                            <Grid Grid.Column="2"
+                                  VerticalAlignment="Stretch">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="10" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Button Grid.Column="1"
+                                            Padding="10,5"
+                                            MinHeight="28"
+                                            Margin="0"
+                                            Content="ОТКРЫТЬ ФАЙЛ"
+                                            Style="{StaticResource OutlineLightButton}"
+                                            Click="OpenLogButton_Click" />
+                                </Grid>
+
+                                <Border Grid.Row="2"
+                                        ClipToBounds="True"
+                                        Background="{StaticResource InkBrush}"
+                                        CornerRadius="3">
+                                    <TextBox x:Name="LogTextBox"
+                                             Text="> ОЖИДАНИЕ СОБЫТИЙ…&#10;"
+                                              IsReadOnly="True"
+                                              TextWrapping="Wrap"
+                                              VerticalScrollBarVisibility="Hidden"
+                                              HorizontalScrollBarVisibility="Disabled"
+                                              Background="Transparent"
+                                             BorderThickness="0"
+                                             Padding="14,12" />
+                                </Border>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+
+                    <Grid Margin="28,26,28,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Expander x:Name="TelegramDrawer"
+                                  Grid.Column="0"
+                                  VerticalAlignment="Top"
+                                  Style="{StaticResource DrawerExpander}"
+                                  Expanded="ServiceDrawer_Expanded"
+                                  Collapsed="ServiceDrawer_Collapsed">
+                            <Expander.Header>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="TELEGRAM"
+                                                   FontSize="18"
+                                                   FontWeight="Bold" />
+                                        <TextBlock Text="Локальный прокси"
+                                                   Margin="0,3,0,0"
+                                                   Foreground="{StaticResource MutedBrush}"
+                                                   FontSize="12" />
+                                    </StackPanel>
+                                    <Border Grid.Column="1"
+                                            Padding="9,5"
+                                            Margin="12,0,14,0"
+                                            VerticalAlignment="Center"
+                                            Background="#E9E7DF"
+                                            CornerRadius="3">
+                                        <TextBlock x:Name="TelegramVersionText"
+                                                   Text="не установлен"
+                                                   FontFamily="Cascadia Mono, Consolas"
+                                                   FontSize="11" />
+                                    </Border>
+                                    <TextBlock x:Name="TelegramDrawerGlyph"
+                                               Grid.Column="2"
+                                               Text="＋"
+                                               VerticalAlignment="Center"
+                                               FontFamily="Segoe UI Symbol"
+                                               FontSize="21"
+                                               FontWeight="SemiBold" />
+                                </Grid>
+                            </Expander.Header>
+                            <Border Padding="20,0,20,20">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Border BorderBrush="#D4D1C9" BorderThickness="0,1,0,0" />
+
+                                    <StackPanel Grid.Row="1" Margin="0,16,0,17">
+                                        <TextBlock x:Name="TelegramStatusText"
+                                                   Text="○ Остановлен"
+                                                   FontSize="15"
+                                                   FontWeight="SemiBold" />
+                                        <TextBlock Margin="0,7,0,0"
+                                                   Text="MTProto → WebSocket. Управляется без дублирующихся экземпляров."
+                                                   TextWrapping="Wrap"
+                                                   Foreground="{StaticResource MutedBrush}"
+                                                   FontSize="13"
+                                                   LineHeight="19" />
+                                    </StackPanel>
+
+                                    <WrapPanel Grid.Row="2">
+                                        <Button x:Name="StartTelegramButton"
+                                                Content="Запустить"
+                                                Style="{StaticResource BlueButton}"
+                                                Click="StartTelegramButton_Click" />
+                                        <Button x:Name="StopTelegramButton"
+                                                Content="Остановить"
+                                                Style="{StaticResource SecondaryButton}"
+                                                Click="StopTelegramButton_Click" />
+                                        <Button x:Name="ConnectTelegramButton"
+                                                Content="Подключить Telegram"
+                                                Style="{StaticResource SecondaryButton}"
+                                                Click="ConnectTelegramButton_Click" />
+                                    </WrapPanel>
+                                </Grid>
+                            </Border>
+                        </Expander>
+
+                        <Expander x:Name="ZapretDrawer"
+                                  Grid.Column="2"
+                                  VerticalAlignment="Top"
+                                  Style="{StaticResource DrawerExpander}"
+                                  Expanded="ServiceDrawer_Expanded"
+                                  Collapsed="ServiceDrawer_Collapsed">
+                            <Expander.Header>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="DISCORD × YOUTUBE"
+                                                   FontSize="18"
+                                                   FontWeight="Bold" />
+                                        <TextBlock Text="Zapret / WinDivert"
+                                                   Margin="0,3,0,0"
+                                                   Foreground="{StaticResource MutedBrush}"
+                                                   FontSize="12" />
+                                    </StackPanel>
+                                    <Border Grid.Column="1"
+                                            Padding="9,5"
+                                            Margin="12,0,14,0"
+                                            VerticalAlignment="Center"
+                                            Background="#E9E7DF"
+                                            CornerRadius="3">
+                                        <TextBlock x:Name="ZapretVersionText"
+                                                   Text="не установлен"
+                                                   FontFamily="Cascadia Mono, Consolas"
+                                                   FontSize="11" />
+                                    </Border>
+                                    <TextBlock x:Name="ZapretDrawerGlyph"
+                                               Grid.Column="2"
+                                               Text="＋"
+                                               VerticalAlignment="Center"
+                                               FontFamily="Segoe UI Symbol"
+                                               FontSize="21"
+                                               FontWeight="SemiBold" />
+                                </Grid>
+                            </Expander.Header>
+                            <Border Padding="20,0,20,20">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Border BorderBrush="#D4D1C9" BorderThickness="0,1,0,0" />
+
+                                    <StackPanel Grid.Row="1" Margin="0,16,0,17">
+                                        <TextBlock x:Name="ZapretStatusText"
+                                                   Text="○ Остановлен"
+                                                   FontSize="15"
+                                                   FontWeight="SemiBold" />
+                                        <TextBlock x:Name="LegacyServicesText"
+                                                   Margin="0,8,0,0"
+                                                   Text="Старые службы и посторонние winws.exe не найдены"
+                                                   TextWrapping="Wrap"
+                                                   Foreground="{StaticResource MutedBrush}"
+                                                   FontSize="13"
+                                                   LineHeight="19" />
+                                    </StackPanel>
+
+                                    <WrapPanel Grid.Row="2">
+                                        <Button x:Name="StopZapretButton"
+                                                Content="Остановить"
+                                                Style="{StaticResource SecondaryButton}"
+                                                Click="StopZapretButton_Click" />
+                                        <Button x:Name="CleanupServicesButton"
+                                                Content="Очистить старые службы"
+                                                Style="{StaticResource DangerButton}"
+                                                Click="CleanupServicesButton_Click" />
+                                    </WrapPanel>
+                                </Grid>
+                            </Border>
+                        </Expander>
+                    </Grid>
+
+                    <Border Margin="28,16,28,0"
+                            Background="{StaticResource WhiteBrush}"
+                            BorderBrush="{StaticResource InkBrush}"
+                            BorderThickness="1"
+                            CornerRadius="5">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.55*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Margin="22">
+                                <TextBlock Text="03 / МАРШРУТ ДОСТУПА"
+                                           Style="{StaticResource MonoLabel}"
+                                           Foreground="{StaticResource PrimaryBrush}" />
+                                <TextBlock Text="Стратегия zapret"
+                                           Style="{StaticResource SectionHeading}"
+                                           Margin="0,7,0,0" />
+                                <TextBlock Margin="0,7,0,16"
+                                            Text="Сначала проверяются general*.bat, затем у лучших методов — игровой фильтр и область IP-set. Победитель подтверждается повторной серией проб."
+                                           TextWrapping="Wrap"
+                                           Foreground="{StaticResource MutedBrush}"
+                                           LineHeight="19" />
+                                <ComboBox x:Name="StrategyCombo"
+                                          SelectionChanged="StrategyCombo_SelectionChanged" />
+                                <WrapPanel Margin="0,14,0,0">
+                                    <Button x:Name="FindStrategyButton"
+                                            Content="Подобрать метод и параметры"
+                                            Style="{StaticResource BlueButton}"
+                                            Click="FindStrategyButton_Click" />
+                                    <Button x:Name="StartStrategyButton"
+                                            Content="Запустить выбранную"
+                                            Style="{StaticResource SecondaryButton}"
+                                            Click="StartStrategyButton_Click" />
+                                    <Button x:Name="CheckHealthButton"
+                                            Content="Проверить сейчас"
+                                            Style="{StaticResource SecondaryButton}"
+                                            Click="CheckHealthButton_Click" />
+                                </WrapPanel>
+                            </StackPanel>
+
+                            <Border Grid.Column="1"
+                                    Padding="22"
+                                    Background="{StaticResource IceBrush}"
+                                    BorderBrush="{StaticResource InkBrush}"
+                                    BorderThickness="1,0,0,0">
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="ДОСТУПНОСТЬ / LIVE" Style="{StaticResource MonoLabel}" />
+                                    <TextBlock x:Name="HealthStatusText"
+                                               Margin="0,13,0,8"
+                                               Text="Ещё не проверено"
+                                               FontSize="25"
+                                               FontWeight="Bold"
+                                               TextWrapping="Wrap" />
+                                    <TextBlock x:Name="HealthDetailText"
+                                               Text="Проверяются HTTPS, CDN и Discord WebSocket."
+                                               TextWrapping="Wrap"
+                                               Foreground="#3E4C61"
+                                               FontFamily="Cascadia Mono, Consolas"
+                                               FontSize="11"
+                                               LineHeight="17" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <Border Margin="28,16,28,0"
+                            Padding="18"
+                            Background="{StaticResource InkBrush}"
+                            BorderBrush="{StaticResource InkBrush}"
+                            BorderThickness="1"
+                            CornerRadius="5">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="18" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="04 / ПАРАМЕТРЫ МЕТОДА"
+                                               Style="{StaticResource MonoLabel}"
+                                               Foreground="#8FA7FF" />
+                                    <TextBlock Text="Режимы, списки и hosts"
+                                               Margin="0,6,0,0"
+                                               Foreground="{StaticResource WhiteBrush}"
+                                               FontSize="17"
+                                               FontWeight="Bold" />
+                                    <TextBlock x:Name="CustomizationSummaryText"
+                                               Margin="0,5,14,0"
+                                               Text="Тонкая настройка zapret"
+                                               TextTrimming="CharacterEllipsis"
+                                               Foreground="#A8AFBC"
+                                               FontSize="12" />
+                                </StackPanel>
+                                <Button x:Name="OpenCustomizationButton"
+                                        Grid.Column="1"
+                                        Content="Открыть"
+                                        Style="{StaticResource OutlineLightButton}"
+                                        Click="OpenCustomizationButton_Click" />
+                            </Grid>
+
+                            <Grid Grid.Column="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="05 / АВТОМАТИЗАЦИЯ"
+                                               Style="{StaticResource MonoLabel}"
+                                               Foreground="#8FA7FF" />
+                                    <TextBlock Text="Запуск и обновления"
+                                               Margin="0,6,0,0"
+                                               Foreground="{StaticResource WhiteBrush}"
+                                               FontSize="17"
+                                               FontWeight="Bold" />
+                                    <TextBlock Margin="0,5,14,0"
+                                               Text="Фоновая работа менеджера"
+                                               Foreground="#A8AFBC"
+                                               FontSize="12" />
+                                </StackPanel>
+                                <Button x:Name="OpenAutomationButton"
+                                        Grid.Column="1"
+                                        Content="Открыть"
+                                        Style="{StaticResource OutlineLightButton}"
+                                        Click="OpenAutomationButton_Click" />
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <Border x:Name="CustomizationPanel"
+                            Visibility="Collapsed"
+                            Margin="28,16,28,0"
+                            Padding="22"
+                            Background="{StaticResource WhiteBrush}"
+                            BorderBrush="{StaticResource InkBrush}"
+                            BorderThickness="1"
+                            CornerRadius="5">
+                        <StackPanel>
+                            <TextBlock Text="04 / ПАРАМЕТРЫ МЕТОДА"
+                                       Style="{StaticResource MonoLabel}"
+                                       Foreground="{StaticResource PrimaryBrush}" />
+                            <TextBlock Text="Тонкая настройка zapret"
+                                       Style="{StaticResource SectionHeading}"
+                                       Margin="0,7,0,0" />
+                            <TextBlock Margin="0,7,0,18"
+                                       Text="Режимы применяются поверх выбранного general*.bat и участвуют в автоподборе. Домены и IP сохраняются как заданные цели; для IP поддерживается CIDR."
+                                       TextWrapping="Wrap"
+                                       Foreground="{StaticResource MutedBrush}"
+                                       LineHeight="19" />
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="16" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="ОФИЦИАЛЬНЫЕ РЕЖИМЫ"
+                                               Style="{StaticResource MonoLabel}" />
+                                    <TextBlock Text="Игровой фильтр" Margin="0,13,0,6" FontWeight="SemiBold" />
+                                    <ComboBox x:Name="GameFilterCombo" />
+                                    <TextBlock Text="Область IP-set" Margin="0,13,0,6" FontWeight="SemiBold" />
+                                    <ComboBox x:Name="IpSetModeCombo" />
+                                    <TextBlock Text="UDP-подмена Discord" Margin="0,13,0,6" FontWeight="SemiBold" />
+                                    <ComboBox x:Name="DiscordFakeCombo" />
+                                    <TextBlock Text="UDP-подмена игрового фильтра" Margin="0,13,0,6" FontWeight="SemiBold" />
+                                    <ComboBox x:Name="GameFakeCombo" />
+                                    <TextBlock Margin="0,10,0,0"
+                                               Text="Автоподбор перебирает игровой фильтр и область IP-set. Режим «Любой IP» может затронуть больше трафика; UDP-подмены требуют проверки звонком или игрой."
+                                               TextWrapping="Wrap"
+                                               Foreground="{StaticResource MutedBrush}"
+                                               FontSize="12" />
+                                </StackPanel>
+
+                                <Grid Grid.Column="2">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="ДОМЕНЫ В ОБХОД"
+                                                       Style="{StaticResource MonoLabel}" />
+                                            <TextBox x:Name="IncludedDomainsBox"
+                                                     Height="112"
+                                                     Margin="0,8,0,0"
+                                                     AcceptsReturn="True"
+                                                     TextWrapping="NoWrap"
+                                                     VerticalScrollBarVisibility="Auto"
+                                                     Style="{StaticResource LightEditor}" />
+                                            <TextBlock Text="example.org"
+                                                       Margin="0,5,0,0"
+                                                       Foreground="{StaticResource MutedBrush}"
+                                                       FontFamily="Cascadia Mono, Consolas"
+                                                       FontSize="11" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="ДОМЕНЫ-ИСКЛЮЧЕНИЯ"
+                                                       Style="{StaticResource MonoLabel}" />
+                                            <TextBox x:Name="ExcludedDomainsBox"
+                                                     Height="112"
+                                                     Margin="0,8,0,0"
+                                                     AcceptsReturn="True"
+                                                     TextWrapping="NoWrap"
+                                                     VerticalScrollBarVisibility="Auto"
+                                                     Style="{StaticResource LightEditor}" />
+                                            <TextBlock Text="static.example.org"
+                                                       Margin="0,5,0,0"
+                                                       Foreground="{StaticResource MutedBrush}"
+                                                       FontFamily="Cascadia Mono, Consolas"
+                                                       FontSize="11" />
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <Grid Grid.Row="1" Margin="0,17,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="IP / ПОДСЕТИ В ОБХОД"
+                                                       Style="{StaticResource MonoLabel}" />
+                                            <TextBox x:Name="IncludedIpRangesBox"
+                                                     Height="112"
+                                                     Margin="0,8,0,0"
+                                                     AcceptsReturn="True"
+                                                     TextWrapping="NoWrap"
+                                                     VerticalScrollBarVisibility="Auto"
+                                                     Style="{StaticResource LightEditor}" />
+                                            <TextBlock Text="198.51.100.0/24"
+                                                       Margin="0,5,0,0"
+                                                       Foreground="{StaticResource MutedBrush}"
+                                                       FontFamily="Cascadia Mono, Consolas"
+                                                       FontSize="11" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="IP / ПОДСЕТИ-ИСКЛЮЧЕНИЯ"
+                                                       Style="{StaticResource MonoLabel}" />
+                                            <TextBox x:Name="ExcludedIpRangesBox"
+                                                     Height="112"
+                                                     Margin="0,8,0,0"
+                                                     AcceptsReturn="True"
+                                                     TextWrapping="NoWrap"
+                                                     VerticalScrollBarVisibility="Auto"
+                                                     Style="{StaticResource LightEditor}" />
+                                            <TextBlock Text="203.0.113.15/32"
+                                                       Margin="0,5,0,0"
+                                                       Foreground="{StaticResource MutedBrush}"
+                                                       FontFamily="Cascadia Mono, Consolas"
+                                                       FontSize="11" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+
+                            <WrapPanel Margin="0,20,0,0">
+                                <Button x:Name="SaveCustomizationButton"
+                                        Content="Сохранить и применить"
+                                        Style="{StaticResource BlueButton}"
+                                        Click="SaveCustomizationButton_Click" />
+                                <Button Content="Открыть папку списков"
+                                        Style="{StaticResource SecondaryButton}"
+                                        Click="OpenZapretListsButton_Click" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Visibility="Collapsed"
+                            Margin="28,16,28,0"
+                            Padding="22"
+                            Background="{StaticResource WhiteBrush}"
+                            BorderBrush="{StaticResource InkBrush}"
+                            BorderThickness="1"
+                            CornerRadius="5">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="34" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="05 / АВТОМАТИЗАЦИЯ"
+                                           Style="{StaticResource MonoLabel}"
+                                           Foreground="{StaticResource PrimaryBrush}" />
+                                <TextBlock Text="Работа в фоне"
+                                           Style="{StaticResource SectionHeading}"
+                                           Margin="0,7,0,12" />
+                                <CheckBox x:Name="StartAtLogonCheck"
+                                          Content="Запускать менеджер при входе в Windows"
+                                          Click="SettingsCheckBox_Click" />
+                                <CheckBox x:Name="CheckUpdatesCheck"
+                                          Content="Проверять официальные релизы при запуске"
+                                          Click="SettingsCheckBox_Click" />
+                                <CheckBox x:Name="StartTelegramCheck"
+                                          Content="Запускать TG WS Proxy вместе с менеджером"
+                                          Click="SettingsCheckBox_Click" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2"
+                                        Margin="0,31,0,0">
+                                <CheckBox x:Name="StartZapretCheck"
+                                          Content="Запускать zapret вместе с менеджером"
+                                          Click="SettingsCheckBox_Click" />
+                                <CheckBox x:Name="AutoStrategyCheck"
+                                          Content="Менять стратегию после трёх сбоев"
+                                          Click="SettingsCheckBox_Click" />
+                                <Button x:Name="UpdateButton"
+                                        Margin="0,16,0,0"
+                                        HorizontalAlignment="Left"
+                                        Content="Проверить обновления"
+                                        Style="{StaticResource BlueButton}"
+                                        Click="UpdateButton_Click" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Margin="28,16,28,28"
+                            Padding="18,14"
+                            Background="{StaticResource InkBrush}"
+                            CornerRadius="5">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="FLOWSEAL MANAGER / ВЕРСИЯ 1.2.12"
+                                           Style="{StaticResource MonoLabel}"
+                                           Foreground="#8C93A0" />
+                                <TextBlock Text="Голосовой UDP Discord окончательно проверяется фактическим звонком."
+                                           Margin="0,5,0,0"
+                                           Foreground="#D4D8E0"
+                                           FontSize="12" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1"
+                                        Margin="22,0,10,0"
+                                        VerticalAlignment="Center"
+                                        Orientation="Horizontal">
+                                <TextBlock Text="Официальные проекты: " Foreground="#8C93A0" />
+                                <TextBlock Text="tg-ws-proxy"
+                                           Foreground="#9CB0FF"
+                                           Cursor="Hand"
+                                           TextDecorations="Underline"
+                                           MouseLeftButtonUp="TelegramLink_Click" />
+                                <TextBlock Text="  /  " Foreground="#8C93A0" />
+                                <TextBlock Text="zapret-discord-youtube"
+                                           Foreground="#9CB0FF"
+                                           Cursor="Hand"
+                                           TextDecorations="Underline"
+                                           MouseLeftButtonUp="ZapretLink_Click" />
+                            </StackPanel>
+                            <Button Grid.Column="2"
+                                    Content="Выход"
+                                    Style="{StaticResource LightButton}"
+                                    Margin="12,0,0,0"
+                                    Click="ExitButton_Click" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</Window>

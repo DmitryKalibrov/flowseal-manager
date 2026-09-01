@@ -1,0 +1,31 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlowsealManager.Core", "src\FlowsealManager.Core\FlowsealManager.Core.csproj", "{AF164629-42B0-4CA8-B827-AB57401ED4A3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlowsealManager.App", "src\FlowsealManager.App\FlowsealManager.App.csproj", "{07C098AF-F971-4768-A111-E0B5F612574B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlowsealManager.Core.Tests", "tests\FlowsealManager.Core.Tests\FlowsealManager.Core.Tests.csproj", "{E5366107-24D4-4022-A617-61520947CCAD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AF164629-42B0-4CA8-B827-AB57401ED4A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF164629-42B0-4CA8-B827-AB57401ED4A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF164629-42B0-4CA8-B827-AB57401ED4A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF164629-42B0-4CA8-B827-AB57401ED4A3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{07C098AF-F971-4768-A111-E0B5F612574B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{07C098AF-F971-4768-A111-E0B5F612574B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{07C098AF-F971-4768-A111-E0B5F612574B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{07C098AF-F971-4768-A111-E0B5F612574B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E5366107-24D4-4022-A617-61520947CCAD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E5366107-24D4-4022-A617-61520947CCAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E5366107-24D4-4022-A617-61520947CCAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E5366107-24D4-4022-A617-61520947CCAD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

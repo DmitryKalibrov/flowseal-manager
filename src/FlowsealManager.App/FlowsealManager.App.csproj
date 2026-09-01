@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\FlowsealManager.ico</ApplicationIcon>
+    <AssemblyName>FlowsealManager</AssemblyName>
+    <RootNamespace>FlowsealManager.App</RootNamespace>
+    <Version>1.2.12</Version>
+    <AssemblyTitle>Flowseal Manager</AssemblyTitle>
+    <Product>Flowseal Manager</Product>
+    <Description>Manager for official Flowseal TG WS Proxy and zapret releases</Description>
+    <Copyright>Copyright © 2026 Flowseal Manager contributors</Copyright>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FlowsealManager.Core\FlowsealManager.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\FlowsealManager.ico" />
+  </ItemGroup>
+</Project>
