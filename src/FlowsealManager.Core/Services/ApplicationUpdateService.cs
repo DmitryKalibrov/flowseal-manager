@@ -1,7 +1,5 @@
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using System.Text.Json;
 using FlowsealManager.Core.Infrastructure;
 using FlowsealManager.Core.Models;
 
@@ -11,10 +9,8 @@ public sealed class ApplicationUpdateService
 {
     public const string RepositoryOwner = "DmitryKalibrov";
     public const string RepositoryName = "flowseal-manager";
-    public const string ManifestAssetName = "update-manifest.json";
-    private const long MaximumManifestBytes = 1_048_576;
-    private const long MaximumPackageBytes = 500_000_000;
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    public const string InstallerAssetName = "FlowsealManager-Setup.exe";
+    private const long MaximumInstallerBytes = 750_000_000;
 
     private readonly HttpClient _httpClient;
     private readonly GitHubReleaseClient _releases;
@@ -39,6 +35,8 @@ public sealed class ApplicationUpdateService
         bool startMinimized,
         CancellationToken cancellationToken = default)
     {
+        _ = currentExecutable;
+        _ = startMinimized;
         CleanupAbandonedUpdates();
         var release = await _releases.GetLatestAsync(
             RepositoryOwner,
@@ -49,185 +47,59 @@ public sealed class ApplicationUpdateService
             return null;
         }
 
-        var manifestAsset = FindAsset(release, ManifestAssetName);
+        var installerAsset = SelectInstallerAsset(release);
         var operationRoot = Path.Combine(_paths.ApplicationUpdatesRoot, Guid.NewGuid().ToString("N"));
-        var staging = Path.Combine(operationRoot, "staging");
-        var packagePath = Path.Combine(operationRoot, "package.zip");
-        var manifestPath = Path.Combine(operationRoot, ManifestAssetName);
+        var installerPath = Path.Combine(operationRoot, InstallerAssetName);
         Directory.CreateDirectory(operationRoot);
 
         try
         {
-            await DownloadAndVerifyAsync(
-                manifestAsset,
-                manifestPath,
-                MaximumManifestBytes,
-                null,
-                cancellationToken).ConfigureAwait(false);
-            var manifest = await ReadManifestAsync(manifestPath, release.TagName, cancellationToken)
-                .ConfigureAwait(false);
-            var package = SelectPackage(manifest);
-            var packageAsset = FindAsset(release, package.AssetName);
-            if (packageAsset.Size != package.Size)
-            {
-                throw new InvalidDataException("Размер пакета не совпадает с манифестом обновления.");
-            }
-
             await _logger.InfoAsync(
-                $"Загружаю Flowseal Manager {ReleaseVersion.Normalize(manifest.ReleaseVersion)}…",
+                $"Загружаю Flowseal Manager {ReleaseVersion.Normalize(release.TagName)}…",
                 cancellationToken).ConfigureAwait(false);
-            await DownloadAndVerifyAsync(
-                packageAsset,
-                packagePath,
-                MaximumPackageBytes,
-                package.Sha256,
-                cancellationToken).ConfigureAwait(false);
-
-            Directory.CreateDirectory(staging);
-            ComponentUpdater.ExtractSafely(packagePath, staging);
-            var executable = Path.Combine(staging, package.Executable);
-            ValidateApplicationExecutable(executable, manifest);
-            var files = Directory.EnumerateFiles(staging, "*", SearchOption.AllDirectories)
-                .Select(file => Path.GetRelativePath(staging, file))
-                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-            if (files.Length == 0 || !files.Contains(package.Executable, StringComparer.OrdinalIgnoreCase))
-            {
-                throw new InvalidDataException("Пакет обновления не содержит приложение.");
-            }
-
-            var fileSha256 = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var relativePath in files)
-            {
-                fileSha256[relativePath] = await ComputeSha256Async(
-                    Path.Combine(staging, relativePath),
-                    cancellationToken).ConfigureAwait(false);
-            }
-            var targetDirectory = Path.GetDirectoryName(Path.GetFullPath(currentExecutable))!;
-            var existingFiles = Directory.EnumerateFiles(targetDirectory, "*", SearchOption.AllDirectories)
-                .Select(file => Path.GetRelativePath(targetDirectory, file))
-                .Where(IsManagedApplicationFile)
-                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-
-            var planPath = Path.Combine(operationRoot, "update-plan.json");
-            var runnerDirectory = Path.Combine(operationRoot, "runner");
-            Directory.CreateDirectory(runnerDirectory);
-            var runner = Path.Combine(runnerDirectory, "FlowsealManager.Updater.exe");
-            File.Copy(executable, runner, true);
-            var plan = new ApplicationUpdatePlan
-            {
-                SchemaVersion = 1,
-                ParentProcessId = Environment.ProcessId,
-                CurrentReleaseVersion = ReleaseVersion.Normalize(currentReleaseVersion),
-                CurrentExecutableSha256 = await ComputeSha256Async(currentExecutable, cancellationToken)
-                    .ConfigureAwait(false),
-                TargetReleaseVersion = ReleaseVersion.Normalize(manifest.ReleaseVersion),
-                TargetDirectory = targetDirectory,
-                StagingDirectory = staging,
-                Executable = package.Executable,
-                BackupDirectory = Path.Combine(operationRoot, "backup"),
-                SuccessMarker = Path.Combine(operationRoot, "started.ok"),
-                StartMinimized = startMinimized,
-                Files = files,
-                ExistingFiles = existingFiles,
-                FileSha256 = fileSha256
-            };
-            await WriteJsonAtomicallyAsync(planPath, plan, cancellationToken).ConfigureAwait(false);
-            var planSha256 = await ComputeSha256Async(planPath, cancellationToken).ConfigureAwait(false);
+            await DownloadAndVerifyAsync(installerAsset, installerPath, cancellationToken).ConfigureAwait(false);
+            var buildVersion = ValidateInstallerExecutable(installerPath, release.TagName);
             return new PreparedApplicationUpdate(
-                ReleaseVersion.Normalize(manifest.ReleaseVersion),
-                manifest.BuildVersion,
-                runner,
-                planPath,
-                planSha256);
+                ReleaseVersion.Normalize(release.TagName),
+                buildVersion,
+                installerPath);
         }
         catch
         {
             TryDeleteDirectory(operationRoot);
             throw;
         }
-        finally
-        {
-            if (File.Exists(packagePath)) File.Delete(packagePath);
-        }
     }
 
-    public static ApplicationPackageManifest SelectPackage(ApplicationUpdateManifest manifest)
+    public static GitHubAsset SelectInstallerAsset(GitHubRelease release)
     {
-        ArgumentNullException.ThrowIfNull(manifest);
-        var runtimeIdentifier = RuntimeInformation.OSArchitecture switch
+        ArgumentNullException.ThrowIfNull(release);
+        var matches = release.Assets
+            .Where(asset => string.Equals(asset.Name, InstallerAssetName, StringComparison.Ordinal))
+            .ToArray();
+        if (matches.Length != 1)
         {
-            Architecture.X64 => "win-x64",
-            Architecture.Arm64 => "win-arm64",
-            _ => throw new PlatformNotSupportedException("Поддерживаются только Windows x64 и ARM64.")
-        };
-        return manifest.Packages.SingleOrDefault(package =>
-                   string.Equals(package.RuntimeIdentifier, runtimeIdentifier, StringComparison.OrdinalIgnoreCase))
-               ?? throw new InvalidDataException($"В релизе нет пакета {runtimeIdentifier}.");
-    }
-
-    public static void ValidateManifest(ApplicationUpdateManifest manifest, string releaseTag)
-    {
-        ArgumentNullException.ThrowIfNull(manifest);
-        if (manifest.SchemaVersion != 1 ||
-            !string.Equals(
-                ReleaseVersion.Normalize(manifest.ReleaseVersion),
-                ReleaseVersion.Normalize(releaseTag),
-                StringComparison.OrdinalIgnoreCase) ||
-            !Version.TryParse(manifest.BuildVersion, out var buildVersion) ||
-            buildVersion.Revision < 0 ||
-            manifest.Packages.Count is < 1 or > 4)
-        {
-            throw new InvalidDataException("Некорректный манифест обновления.");
+            throw new InvalidDataException($"В релизе должен быть один {InstallerAssetName}.");
         }
 
-        foreach (var package in manifest.Packages)
+        var asset = matches[0];
+        if (asset.Size is < 1_000_000 or > MaximumInstallerBytes || !TryGetGitHubSha256(asset, out _))
         {
-            var expectedAsset = $"FlowsealManager-{package.RuntimeIdentifier}.zip";
-            if (package.RuntimeIdentifier is not ("win-x64" or "win-arm64") ||
-                !string.Equals(package.AssetName, expectedAsset, StringComparison.Ordinal) ||
-                !string.Equals(package.Executable, "FlowsealManager.exe", StringComparison.Ordinal) ||
-                package.Size is < 1_000_000 or > MaximumPackageBytes ||
-                package.Sha256.Length != 64 ||
-                package.Sha256.Any(character => !char.IsAsciiHexDigit(character)))
-            {
-                throw new InvalidDataException("Некорректное описание пакета обновления.");
-            }
+            throw new InvalidDataException("Некорректные метаданные файла обновления.");
         }
 
-        if (manifest.Packages.Select(package => package.RuntimeIdentifier)
-            .Distinct(StringComparer.OrdinalIgnoreCase).Count() != manifest.Packages.Count)
-        {
-            throw new InvalidDataException("Манифест содержит повторяющиеся пакеты.");
-        }
-    }
-
-    private async Task<ApplicationUpdateManifest> ReadManifestAsync(
-        string path,
-        string releaseTag,
-        CancellationToken cancellationToken)
-    {
-        await using var stream = File.OpenRead(path);
-        var manifest = await JsonSerializer.DeserializeAsync<ApplicationUpdateManifest>(
-                stream,
-                cancellationToken: cancellationToken)
-            .ConfigureAwait(false) ?? throw new InvalidDataException("Манифест обновления пуст.");
-        ValidateManifest(manifest, releaseTag);
-        return manifest;
+        ValidateApplicationAssetUrl(asset.DownloadUrl);
+        return asset;
     }
 
     private async Task DownloadAndVerifyAsync(
         GitHubAsset asset,
         string destination,
-        long maximumBytes,
-        string? expectedManifestDigest,
         CancellationToken cancellationToken)
     {
-        ValidateApplicationAssetUrl(asset.DownloadUrl);
-        if (asset.Size is <= 0 || asset.Size > maximumBytes)
+        if (!TryGetGitHubSha256(asset, out var expectedDigest))
         {
-            throw new InvalidDataException("Недопустимый размер файла обновления.");
+            throw new InvalidDataException("GitHub не передал SHA-256 файла обновления.");
         }
 
         using var response = await _httpClient.GetAsync(
@@ -248,38 +120,60 @@ public sealed class ApplicationUpdateService
         }
 
         var length = new FileInfo(destination).Length;
-        if (length != asset.Size || length > maximumBytes)
+        if (length != asset.Size || length > MaximumInstallerBytes)
         {
-            throw new InvalidDataException("Загруженный файл имеет неожиданный размер.");
+            throw new InvalidDataException("Загруженный установщик имеет неожиданный размер.");
         }
 
         await using var stream = File.OpenRead(destination);
-        var actual = Convert.ToHexString(await SHA256.HashDataAsync(stream, cancellationToken));
-        var githubDigest = asset.Digest?.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase) == true
-            ? asset.Digest["sha256:".Length..]
-            : null;
-        if ((githubDigest is not null && !DigestEquals(actual, githubDigest)) ||
-            (expectedManifestDigest is not null && !DigestEquals(actual, expectedManifestDigest)))
+        var actualDigest = await SHA256.HashDataAsync(stream, cancellationToken).ConfigureAwait(false);
+        if (!CryptographicOperations.FixedTimeEquals(actualDigest, expectedDigest))
         {
             throw new InvalidDataException("Проверка SHA-256 обновления не пройдена.");
         }
     }
 
-    private static bool DigestEquals(string actual, string expected)
+    private static bool TryGetGitHubSha256(GitHubAsset asset, out byte[] digest)
     {
-        if (expected.Length != 64 || expected.Any(character => !char.IsAsciiHexDigit(character)))
+        digest = [];
+        const string prefix = "sha256:";
+        if (asset.Digest?.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) != true)
         {
             return false;
         }
 
-        return CryptographicOperations.FixedTimeEquals(
-            Convert.FromHexString(actual),
-            Convert.FromHexString(expected));
+        var value = asset.Digest[prefix.Length..];
+        if (value.Length != 64 || value.Any(character => !char.IsAsciiHexDigit(character)))
+        {
+            return false;
+        }
+
+        digest = Convert.FromHexString(value);
+        return true;
     }
 
-    private static GitHubAsset FindAsset(GitHubRelease release, string name) =>
-        release.Assets.SingleOrDefault(asset => string.Equals(asset.Name, name, StringComparison.Ordinal))
-        ?? throw new InvalidDataException($"В релизе отсутствует {name}.");
+    private static string ValidateInstallerExecutable(string path, string releaseTag)
+    {
+        using (var stream = File.OpenRead(path))
+        {
+            if (stream.Length < 1_000_000 || stream.ReadByte() != 'M' || stream.ReadByte() != 'Z')
+            {
+                throw new InvalidDataException("Загружен некорректный установщик.");
+            }
+        }
+
+        var version = FileVersionInfo.GetVersionInfo(path);
+        var releaseVersion = ReleaseVersion.Parse(releaseTag).ToString(3);
+        if (!Version.TryParse(version.FileVersion?.Trim(), out var buildVersion) ||
+            buildVersion.Revision < 0 ||
+            !string.Equals(version.ProductName?.Trim(), "Flowseal Manager", StringComparison.Ordinal) ||
+            version.ProductVersion?.Trim().StartsWith(releaseVersion, StringComparison.Ordinal) != true)
+        {
+            throw new InvalidDataException("Версия установщика не совпадает с релизом.");
+        }
+
+        return buildVersion.ToString(4);
+    }
 
     private static void ValidateApplicationAssetUrl(string url)
     {
@@ -294,49 +188,6 @@ public sealed class ApplicationUpdateService
         }
     }
 
-    private static void ValidateApplicationExecutable(string path, ApplicationUpdateManifest manifest)
-    {
-        using var stream = File.OpenRead(path);
-        if (stream.Length < 1_000_000 || stream.ReadByte() != 'M' || stream.ReadByte() != 'Z')
-        {
-            throw new InvalidDataException("В пакете находится некорректный исполняемый файл.");
-        }
-
-        var version = FileVersionInfo.GetVersionInfo(path);
-        if (!string.Equals(version.FileVersion, manifest.BuildVersion, StringComparison.Ordinal) ||
-            version.ProductVersion?.StartsWith(manifest.ReleaseVersion + "+", StringComparison.Ordinal) != true)
-        {
-            throw new InvalidDataException("Версии исполняемого файла не совпадают с манифестом.");
-        }
-    }
-
-    private static async Task<string> ComputeSha256Async(string path, CancellationToken cancellationToken)
-    {
-        await using var stream = File.OpenRead(path);
-        return Convert.ToHexString(await SHA256.HashDataAsync(stream, cancellationToken));
-    }
-
-    private static bool IsManagedApplicationFile(string relativePath) =>
-        string.Equals(relativePath, "FlowsealManager.exe", StringComparison.OrdinalIgnoreCase) ||
-        relativePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
-        relativePath.EndsWith(".deps.json", StringComparison.OrdinalIgnoreCase) ||
-        relativePath.EndsWith(".runtimeconfig.json", StringComparison.OrdinalIgnoreCase);
-
-    private static async Task WriteJsonAtomicallyAsync<T>(
-        string path,
-        T value,
-        CancellationToken cancellationToken)
-    {
-        var temporary = path + ".tmp";
-        await using (var stream = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None))
-        {
-            await JsonSerializer.SerializeAsync(stream, value, JsonOptions, cancellationToken).ConfigureAwait(false);
-            await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        File.Move(temporary, path, true);
-    }
-
     private static void TryDeleteDirectory(string path)
     {
         try
@@ -345,7 +196,7 @@ public sealed class ApplicationUpdateService
         }
         catch
         {
-            // A later maintenance run can remove an abandoned staging directory.
+            // A later maintenance run can remove an abandoned installer.
         }
     }
 

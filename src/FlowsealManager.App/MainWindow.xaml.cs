@@ -220,14 +220,15 @@ public partial class MainWindow : Window
             await _logger.InfoAsync(
                 $"Flowseal Manager {prepared.ReleaseVersion} проверен и готов к установке.",
                 _lifetime.Token);
-            var startInfo = new ProcessStartInfo(prepared.RunnerExecutable)
+            var startInfo = new ProcessStartInfo(prepared.InstallerExecutable)
             {
                 UseShellExecute = true,
-                WorkingDirectory = Path.GetDirectoryName(prepared.RunnerExecutable)!
+                WorkingDirectory = Path.GetDirectoryName(prepared.InstallerExecutable)!
             };
-            startInfo.ArgumentList.Add("--apply-update");
-            startInfo.ArgumentList.Add(prepared.PlanPath);
-            startInfo.ArgumentList.Add(prepared.PlanSha256);
+            startInfo.ArgumentList.Add("/VERYSILENT");
+            startInfo.ArgumentList.Add("/SUPPRESSMSGBOXES");
+            startInfo.ArgumentList.Add("/NORESTART");
+            startInfo.ArgumentList.Add("/CLOSEAPPLICATIONS");
             _ = Process.Start(startInfo)
                 ?? throw new InvalidOperationException("Не удалось запустить установку обновления.");
             ExitApplication();

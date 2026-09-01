@@ -8,7 +8,7 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("SafeVersion rejects traversal", TestSafeVersionAsync),
     ("Release asset selection is exact", TestAssetSelectionAsync),
     ("Application release versions compare semantically", TestApplicationReleaseVersionsAsync),
-    ("Application update manifest is strict", TestApplicationUpdateManifestAsync),
+    ("Application installer asset is strict", TestApplicationInstallerAssetAsync),
     ("Empty reports are unhealthy", TestEmptyReportAsync),
     ("Healthy reports require both services", TestHealthReportAsync),
     ("Coverage score prioritizes essential endpoints", TestCoverageScoreAsync),
@@ -106,52 +106,58 @@ static Task TestApplicationReleaseVersionsAsync()
     return Task.CompletedTask;
 }
 
-static Task TestApplicationUpdateManifestAsync()
+static Task TestApplicationInstallerAssetAsync()
 {
-    var manifest = new ApplicationUpdateManifest
+    var release = new GitHubRelease
     {
-        SchemaVersion = 1,
-        ReleaseVersion = "1.1.0",
-        BuildVersion = "1.2.13.0",
-        Packages =
+        TagName = "v1.2.0",
+        Assets =
         [
-            CreatePackage("win-x64"),
-            CreatePackage("win-arm64")
+            new GitHubAsset
+            {
+                Name = ApplicationUpdateService.InstallerAssetName,
+                DownloadUrl =
+                    "https://github.com/DmitryKalibrov/flowseal-manager/releases/download/v1.2.0/FlowsealManager-Setup.exe",
+                Size = 2_000_000,
+                Digest = "sha256:" + new string('a', 64)
+            }
         ]
     };
-    ApplicationUpdateService.ValidateManifest(manifest, "v1.1.0");
-    var selected = ApplicationUpdateService.SelectPackage(manifest);
-    AssertTrue(selected.RuntimeIdentifier is "win-x64" or "win-arm64");
-    AssertThrows<InvalidDataException>(() => ApplicationUpdateService.ValidateManifest(manifest, "v1.2.0"));
-    AssertThrows<InvalidDataException>(() => ApplicationUpdateService.ValidateManifest(
-        new ApplicationUpdateManifest
+    AssertEqual(
+        ApplicationUpdateService.InstallerAssetName,
+        ApplicationUpdateService.SelectInstallerAsset(release).Name);
+    AssertThrows<InvalidDataException>(() => ApplicationUpdateService.SelectInstallerAsset(
+        new GitHubRelease
         {
-            SchemaVersion = 1,
-            ReleaseVersion = "1.1.0",
-            BuildVersion = "1.2.13.0",
-            Packages =
+            TagName = "v1.2.0",
+            Assets =
             [
-                new ApplicationPackageManifest
+                new GitHubAsset
                 {
-                    RuntimeIdentifier = "win-x64",
-                    AssetName = "FlowsealManager-win-x64.zip",
-                    Sha256 = "unsafe",
+                    Name = ApplicationUpdateService.InstallerAssetName,
+                    DownloadUrl =
+                        "https://github.com/DmitryKalibrov/flowseal-manager/releases/download/v1.2.0/FlowsealManager-Setup.exe",
                     Size = 2_000_000,
-                    Executable = "FlowsealManager.exe"
+                    Digest = "sha256:unsafe"
                 }
             ]
-        },
-        "v1.1.0"));
+        }));
+    AssertThrows<InvalidDataException>(() => ApplicationUpdateService.SelectInstallerAsset(
+        new GitHubRelease
+        {
+            TagName = "v1.2.0",
+            Assets =
+            [
+                new GitHubAsset
+                {
+                    Name = ApplicationUpdateService.InstallerAssetName,
+                    DownloadUrl = "https://example.invalid/FlowsealManager-Setup.exe",
+                    Size = 2_000_000,
+                    Digest = "sha256:" + new string('a', 64)
+                }
+            ]
+        }));
     return Task.CompletedTask;
-
-    static ApplicationPackageManifest CreatePackage(string runtimeIdentifier) => new()
-    {
-        RuntimeIdentifier = runtimeIdentifier,
-        AssetName = $"FlowsealManager-{runtimeIdentifier}.zip",
-        Sha256 = new string('a', 64),
-        Size = 2_000_000,
-        Executable = "FlowsealManager.exe"
-    };
 }
 
 static Task TestEmptyReportAsync()

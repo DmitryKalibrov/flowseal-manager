@@ -33,6 +33,10 @@ jobs:
       - name: Восстановить зависимости
         run: dotnet restore FlowsealManager.sln
 
+      - name: Установить сборщик установщика
+        shell: pwsh
+        run: choco install innosetup --no-progress --yes
+
       - name: Собрать и упаковать релиз
         shell: pwsh
         run: .\scripts\package-release.ps1
@@ -57,10 +61,7 @@ jobs:
             throw "Отсутствует русское описание выпуска $notes."
           }
           gh release create '${{ github.ref_name }}' `
-            '.\release\FlowsealManager-win-x64.zip' `
-            '.\release\FlowsealManager-win-arm64.zip' `
-            '.\release\update-manifest.json' `
-            '.\release\SHA256SUMS.txt' `
+            '.\release\FlowsealManager-Setup.exe' `
             --verify-tag `
             --notes-file $notes `
             --latest `

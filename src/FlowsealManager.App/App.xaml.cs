@@ -17,19 +17,6 @@ public partial class App : System.Windows.Application
     protected override void OnStartup(StartupEventArgs e)
     {
         DispatcherUnhandledException += App_DispatcherUnhandledException;
-        var updatePlanIndex = Array.FindIndex(e.Args, argument =>
-            string.Equals(argument, "--apply-update", StringComparison.OrdinalIgnoreCase));
-        if (updatePlanIndex >= 0 && updatePlanIndex + 2 < e.Args.Length)
-        {
-            ShutdownMode = ShutdownMode.OnExplicitShutdown;
-            base.OnStartup(e);
-            var planPath = e.Args[updatePlanIndex + 1];
-            var planSha256 = e.Args[updatePlanIndex + 2];
-            var exitCode = ApplicationUpdateRunner.RunAsync(planPath, planSha256).GetAwaiter().GetResult();
-            Shutdown(exitCode);
-            return;
-        }
-
         _mutex = new Mutex(true, "Local\\FlowsealManager-6C02E8B7", out _ownsMutex);
         if (!_ownsMutex)
         {
@@ -52,56 +39,11 @@ public partial class App : System.Windows.Application
         }
 
         base.OnStartup(e);
-        string? updateMarker = null;
-        var updateCompleteIndex = Array.FindIndex(e.Args, argument =>
-            string.Equals(argument, "--update-complete", StringComparison.OrdinalIgnoreCase));
-        if (updateCompleteIndex >= 0 && updateCompleteIndex + 1 < e.Args.Length)
-        {
-            try
-            {
-                var marker = Path.GetFullPath(e.Args[updateCompleteIndex + 1]);
-                var expectedRoot = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "FlowsealManager",
-                    "updates") + Path.DirectorySeparatorChar;
-                if (marker.StartsWith(expectedRoot, StringComparison.OrdinalIgnoreCase))
-                {
-                    updateMarker = marker;
-                }
-            }
-            catch
-            {
-                // The updater will restore the previous build when no marker appears.
-            }
-        }
-
         var minimized = e.Args.Any(argument =>
             string.Equals(argument, "--minimized", StringComparison.OrdinalIgnoreCase));
         var window = new MainWindow(minimized);
         MainWindow = window;
         window.Show();
-        if (updateMarker is not null)
-        {
-            var marker = updateMarker;
-            Dispatcher.InvokeAsync(() =>
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(marker)!);
-                File.WriteAllText(marker, DateTimeOffset.UtcNow.ToString("O"));
-            }, DispatcherPriority.ContextIdle);
-        }
-
-        if (e.Args.Any(argument => string.Equals(
-                argument,
-                "--update-rollback",
-                StringComparison.OrdinalIgnoreCase)))
-        {
-            Dispatcher.InvokeAsync(() => System.Windows.MessageBox.Show(
-                "Новая версия не смогла запуститься. Flowseal Manager автоматически вернул предыдущую сборку. " +
-                "Подробности сохранены в журнале update.log.",
-                "Обновление отменено",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning));
-        }
         _activationEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ActivationEventName);
         _activationCancellation = new CancellationTokenSource();
         _activationTask = Task.Run(() => ListenForActivation(_activationCancellation.Token));

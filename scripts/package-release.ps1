@@ -25,8 +25,6 @@ New-Item -ItemType Directory -Path $outputRoot | Out-Null
 dotnet run --project (Join-Path $projectRoot 'tests\FlowsealManager.Core.Tests\FlowsealManager.Core.Tests.csproj') -c Release
 if ($LASTEXITCODE -ne 0) { throw 'Core tests failed.' }
 
-$packages = @()
-$checksums = @()
 foreach ($runtimeIdentifier in @('win-x64', 'win-arm64')) {
     $publishRoot = Join-Path $outputRoot "publish-$runtimeIdentifier"
     dotnet publish (Join-Path $projectRoot 'src\FlowsealManager.App\FlowsealManager.App.csproj') `
@@ -45,32 +43,39 @@ foreach ($runtimeIdentifier in @('win-x64', 'win-arm64')) {
     if ($fileVersion -ne $buildVersion) {
         throw "Built file version $fileVersion does not match BuildVersion $buildVersion."
     }
-    $assetName = "FlowsealManager-$runtimeIdentifier.zip"
-    $assetPath = Join-Path $outputRoot $assetName
-    Compress-Archive -LiteralPath $executable -DestinationPath $assetPath -CompressionLevel Optimal
-    $hash = (Get-FileHash -LiteralPath $assetPath -Algorithm SHA256).Hash.ToLowerInvariant()
-    $size = (Get-Item -LiteralPath $assetPath).Length
-    $packages += [ordered]@{
-        runtimeIdentifier = $runtimeIdentifier
-        assetName = $assetName
-        sha256 = $hash
-        size = $size
-        executable = 'FlowsealManager.exe'
-    }
-    $checksums += "$hash  $assetName"
-    Remove-Item -LiteralPath $publishRoot -Recurse -Force
 }
 
-$manifest = [ordered]@{
-    schemaVersion = 1
-    releaseVersion = $releaseVersion
-    buildVersion = $buildVersion
-    packages = $packages
+$isccCandidates = @(
+    (Get-Command ISCC.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue),
+    (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'),
+    (Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe'),
+    (Join-Path $env:LocalAppData 'Programs\Inno Setup 6\ISCC.exe')
+)
+$iscc = $isccCandidates | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
+if (-not $iscc) {
+    throw 'Inno Setup 6 is required. Install JRSoftware.InnoSetup and run packaging again.'
 }
-$manifestPath = Join-Path $outputRoot 'update-manifest.json'
-$manifest | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $manifestPath -Encoding utf8NoBOM
-$manifestHash = (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
-$checksums += "$manifestHash  update-manifest.json"
-$checksums | Set-Content -LiteralPath (Join-Path $outputRoot 'SHA256SUMS.txt') -Encoding ascii
+
+& $iscc `
+    "/DReleaseVersion=$releaseVersion" `
+    "/DBuildVersion=$buildVersion" `
+    "/DSourceRoot=$outputRoot" `
+    "/DOutputRoot=$outputRoot" `
+    (Join-Path $projectRoot 'installer\FlowsealManager.iss')
+if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }
+
+foreach ($runtimeIdentifier in @('win-x64', 'win-arm64')) {
+    Remove-Item -LiteralPath (Join-Path $outputRoot "publish-$runtimeIdentifier") -Recurse -Force
+}
+
+$installer = Join-Path $outputRoot 'FlowsealManager-Setup.exe'
+if (-not (Test-Path -LiteralPath $installer)) { throw 'FlowsealManager-Setup.exe is missing.' }
+$installerVersion = (Get-Item -LiteralPath $installer).VersionInfo.FileVersion.Trim()
+if ($installerVersion -ne $buildVersion) {
+    throw "Installer file version $installerVersion does not match BuildVersion $buildVersion."
+}
+$hash = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+$size = (Get-Item -LiteralPath $installer).Length
 
 Write-Host "Prepared Flowseal Manager v$releaseVersion (build $buildVersion) in $outputRoot" -ForegroundColor Green
+Write-Host "FlowsealManager-Setup.exe: $size bytes, SHA-256 $hash" -ForegroundColor Green
