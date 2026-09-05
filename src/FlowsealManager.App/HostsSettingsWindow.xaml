@@ -48,13 +48,13 @@
                           VerticalScrollBarVisibility="Hidden"
                           HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Margin="30,26,30,22">
-                    <TextBlock Text="HOSTS / ОФИЦИАЛЬНЫЙ СПИСОК"
+                    <TextBlock Text="HOSTS / УПРАВЛЯЕМЫЙ СПИСОК"
                                Style="{StaticResource MonoLabel}"
                                Foreground="{StaticResource PrimaryBrush}" />
                     <TextBlock Text="Адреса Zapret"
                                Style="{StaticResource SectionHeading}"
                                Margin="0,7,0,5" />
-                    <TextBlock Text="Официальный список Flowseal закрепляет адреса GitHub, Telegram и Discord. Он дополняет обход Zapret, но не заменяет выбранную стратегию."
+                    <TextBlock Text="Список Flowseal закрепляет адреса GitHub, Telegram и Discord. Менеджер также добавляет 18.65.39.105 для tr.rbxcdn.com, чтобы поддержать загрузку ресурсов Roblox. Hosts дополняет обход Zapret, но не заменяет выбранную стратегию."
                                TextWrapping="Wrap"
                                Foreground="{StaticResource MutedBrush}"
                                LineHeight="19" />

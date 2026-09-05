@@ -426,17 +426,24 @@ static async Task TestZapretHostsAsync()
         AssertTrue(File.Exists(installed.BackupPath));
         var installedText = await File.ReadAllTextAsync(hosts);
         AssertTrue(installedText.StartsWith(original, StringComparison.Ordinal));
+        AssertTrue(installedText.Contains(ZapretHostsService.RobloxCdnEntry, StringComparison.Ordinal));
+        AssertEqual(official.Split('\n').Length + 1, installed.Status.InstalledEntries);
         AssertEqual(1, installedText.Split(ZapretHostsService.BeginMarker).Length - 1);
 
         const string trailingCustomEntry = "198.51.100.8 after.example\r\n";
         await File.AppendAllTextAsync(hosts, trailingCustomEntry);
-        var updatedOfficial = official + "\n149.154.167.220 telegram.org";
+        var updatedOfficial = official +
+            "\n149.154.167.220 telegram.org" +
+            "\n203.0.113.99 tr.rbxcdn.com";
         var updated = await service.InstallOrUpdateAsync(updatedOfficial);
         AssertTrue(updated.Status.IsCurrent == true);
         var updatedText = await File.ReadAllTextAsync(hosts);
         AssertTrue(updatedText.Contains("203.0.113.7 custom.example", StringComparison.Ordinal));
         AssertTrue(updatedText.Contains(trailingCustomEntry.Trim(), StringComparison.Ordinal));
         AssertTrue(updatedText.Contains("149.154.167.220 telegram.org", StringComparison.Ordinal));
+        AssertEqual(1, updatedText.Split("tr.rbxcdn.com").Length - 1);
+        AssertTrue(updatedText.Contains(ZapretHostsService.RobloxCdnEntry, StringComparison.Ordinal));
+        AssertFalse(updatedText.Contains("203.0.113.99 tr.rbxcdn.com", StringComparison.Ordinal));
         AssertEqual(1, updatedText.Split(ZapretHostsService.BeginMarker).Length - 1);
 
         var removed = await service.RemoveAsync();

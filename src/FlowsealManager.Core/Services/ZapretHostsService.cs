@@ -14,6 +14,7 @@ public sealed class ZapretHostsService
 
     public const string BeginMarker = "# BEGIN FLOWSEAL MANAGER / ZAPRET HOSTS";
     public const string EndMarker = "# END FLOWSEAL MANAGER / ZAPRET HOSTS";
+    public const string RobloxCdnEntry = "18.65.39.105 tr.rbxcdn.com";
 
     private const int MaximumDownloadBytes = 256 * 1024;
     private readonly HttpClient _httpClient;
@@ -68,14 +69,14 @@ public sealed class ZapretHostsService
             await memory.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
         }
 
-        return NormalizeOfficial(Encoding.UTF8.GetString(memory.ToArray()));
+        return BuildManagedContent(Encoding.UTF8.GetString(memory.ToArray()));
     }
 
     public ZapretHostsStatus Inspect(string? officialContent = null)
     {
         var raw = ReadHostsFile();
         var managed = ExtractManagedBlock(raw);
-        var official = officialContent is null ? null : NormalizeOfficial(officialContent);
+        var official = officialContent is null ? null : BuildManagedContent(officialContent);
         var installedEntries = managed is null ? 0 : CountEntries(managed.Content);
         return new ZapretHostsStatus(
             managed is not null,
@@ -91,7 +92,7 @@ public sealed class ZapretHostsService
         string officialContent,
         CancellationToken cancellationToken = default)
     {
-        var normalized = NormalizeOfficial(officialContent);
+        var normalized = BuildManagedContent(officialContent);
         var originalBytes = ReadHostsBytes();
         var raw = DecodePreservingBytes(originalBytes);
         var newline = DetectNewline(raw);
@@ -165,6 +166,27 @@ public sealed class ZapretHostsService
         }
 
         return string.Join('\n', normalizedLines);
+    }
+
+    public static string BuildManagedContent(string officialContent)
+    {
+        var normalized = NormalizeOfficial(officialContent);
+        var lines = new List<string>();
+        foreach (var line in SplitLines(normalized))
+        {
+            var fields = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            var domains = fields
+                .Skip(1)
+                .Where(domain => !domain.Equals("tr.rbxcdn.com", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            if (domains.Length > 0)
+            {
+                lines.Add($"{fields[0]} {string.Join(' ', domains)}");
+            }
+        }
+
+        lines.Add(RobloxCdnEntry);
+        return string.Join('\n', lines);
     }
 
     private async Task<string> BackupAndWriteAsync(
