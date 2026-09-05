@@ -1,8 +1,8 @@
 <Project>
   <PropertyGroup>
     <!-- Единственный источник номеров публичного релиза и внутренней сборки. -->
-    <ReleaseVersion>1.2.1</ReleaseVersion>
-    <BuildVersion>1.2.15.0</BuildVersion>
+    <ReleaseVersion>1.2.2</ReleaseVersion>
+    <BuildVersion>1.2.16.0</BuildVersion>
     <Version>$(BuildVersion)</Version>
     <AssemblyVersion>$(BuildVersion)</AssemblyVersion>
     <FileVersion>$(BuildVersion)</FileVersion>

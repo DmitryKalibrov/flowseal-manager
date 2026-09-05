@@ -20,6 +20,7 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Zapret strategy expands into direct arguments", TestStrategyParserAsync),
     ("Strategies use natural order", TestStrategyOrderAsync),
     ("Telegram loader and worker count as one instance", TestTelegramProcessTreesAsync),
+    ("Telegram temp falls back to a reusable fixed drive", TestTelegramTempSelectionAsync),
     ("Only WinDivert driver services are transient", TestTransientDriverNamesAsync),
     ("Zapret user lists validate and normalize", TestZapretUserListValidationAsync),
     ("Zapret customization persists official modes", TestZapretCustomizationAsync),
@@ -78,6 +79,32 @@ static Task TestTelegramProcessTreesAsync()
     AssertEqual(2, ComponentProcessManager.CountProcessTrees([(100, 1), (101, 100), (200, 1), (201, 200)]));
     AssertEqual(1, ComponentProcessManager.CountProcessTrees([(100, 1)]));
     AssertEqual(0, ComponentProcessManager.CountProcessTrees([]));
+    return Task.CompletedTask;
+}
+
+static Task TestTelegramTempSelectionAsync()
+{
+    var enough = TelegramRuntimeEnvironment.MinimumFreeSpaceBytes + 1;
+    var systemTemp = Path.Combine("C:" + Path.DirectorySeparatorChar, "Users", "test", "Temp");
+    AssertEqual(
+        Path.GetFullPath(systemTemp),
+        TelegramRuntimeEnvironment.SelectTempDirectory(
+            systemTemp,
+            [new TelegramTempDrive("C:" + Path.DirectorySeparatorChar, DriveType.Fixed, enough, false)]));
+
+    var fallback = TelegramRuntimeEnvironment.SelectTempDirectory(
+        systemTemp,
+        [
+            new TelegramTempDrive("C:" + Path.DirectorySeparatorChar, DriveType.Fixed, 0, false),
+            new TelegramTempDrive("D:" + Path.DirectorySeparatorChar, DriveType.Fixed, enough * 10, false),
+            new TelegramTempDrive("E:" + Path.DirectorySeparatorChar, DriveType.Fixed, enough, true)
+        ]);
+    AssertEqual(
+        Path.Combine("E:" + Path.DirectorySeparatorChar, "FlowsealManagerTemp", "TgWsProxy"),
+        fallback);
+    AssertThrows<InvalidOperationException>(() => TelegramRuntimeEnvironment.SelectTempDirectory(
+        systemTemp,
+        [new TelegramTempDrive("C:" + Path.DirectorySeparatorChar, DriveType.Fixed, 0, false)]));
     return Task.CompletedTask;
 }
 

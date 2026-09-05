@@ -500,14 +500,17 @@ public partial class MainWindow : Window
         TelegramVersionText.Text = HasTelegram() ? _settings.TelegramVersion : "не установлен";
         ZapretVersionText.Text = HasZapret() ? _settings.ZapretVersion : "не установлен";
         var telegramInstanceCount = _processes.TelegramInstanceCount();
-        TelegramStatusText.Text = telegramInstanceCount > 0
-            ? telegramInstanceCount == 1
-                ? "● Работает в фоне · управление через Flowseal Manager"
-                : $"● Найдено экземпляров: {telegramInstanceCount}; нажмите «Запустить» для нормализации"
-            : "○ Остановлен";
-        TelegramStatusText.Foreground = telegramInstanceCount == 1
-            ? (System.Windows.Media.Brush)FindResource("SuccessOnLightBrush")
+        var telegramRunning = _processes.IsTelegramRunning(_settings.TelegramVersion);
+        TelegramStatusText.Text = telegramRunning && telegramInstanceCount == 1
+            ? "● Работает в фоне · управление через Flowseal Manager"
             : telegramInstanceCount > 1
+                ? $"● Найдено экземпляров: {telegramInstanceCount}; нажмите «Запустить» для нормализации"
+                : telegramInstanceCount == 1
+                    ? "● Процесс запущен, но локальный прокси не отвечает"
+                    : "○ Остановлен";
+        TelegramStatusText.Foreground = telegramRunning && telegramInstanceCount == 1
+            ? (System.Windows.Media.Brush)FindResource("SuccessOnLightBrush")
+            : telegramInstanceCount > 0
                 ? (System.Windows.Media.Brush)FindResource("WarningOnLightBrush")
                 : (System.Windows.Media.Brush)FindResource("MutedBrush");
         ZapretStatusText.Text = _processes.IsZapretRunning(_settings.ZapretVersion)

@@ -1,6 +1,9 @@
 using System.Diagnostics;
+using System.Net;
+using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using FlowsealManager.Core.Infrastructure;
 using Microsoft.Win32;
 
@@ -52,7 +55,8 @@ public sealed class ComponentProcessManager
             telegramProcesses.Select(process => (process.ProcessId, process.ParentProcessId)));
         var managerOwnsInstance = _managedTelegramRootProcessId is int managedProcessId &&
                                   telegramProcesses.Any(process => process.ProcessId == managedProcessId);
-        if (instanceCount == 1 && managerOwnsInstance && !HasTelegramTrayWindow(telegramProcesses))
+        if (instanceCount == 1 && managerOwnsInstance &&
+            !HasTelegramTrayWindow(telegramProcesses) && IsTelegramProxyListening())
         {
             return;
         }
@@ -63,6 +67,7 @@ public sealed class ComponentProcessManager
             await Task.Delay(300, cancellationToken).ConfigureAwait(false);
         }
 
+        var tempDirectory = TelegramRuntimeEnvironment.ResolveTempDirectory();
         var startInfo = new ProcessStartInfo
         {
             FileName = executable,
@@ -74,6 +79,8 @@ public sealed class ComponentProcessManager
         // The official Windows build falls back to its headless proxy loop when
         // pystray cannot load a backend. Flowseal Manager remains the only tray app.
         startInfo.Environment["PYSTRAY_BACKEND"] = "flowseal_manager_headless";
+        startInfo.Environment["TEMP"] = tempDirectory;
+        startInfo.Environment["TMP"] = tempDirectory;
 
         using var launchedProcess = Process.Start(startInfo)
             ?? throw new InvalidOperationException("Не удалось запустить TG WS Proxy.");
@@ -84,11 +91,16 @@ public sealed class ComponentProcessManager
             cancellationToken).ConfigureAwait(false);
         if (!started)
         {
-            throw new InvalidOperationException("TG WS Proxy не запустился.");
+            _managedTelegramRootProcessId = null;
+            await StopTelegramAsync(version, cancellationToken).ConfigureAwait(false);
+            var endpoint = ReadTelegramProxyEndpoint();
+            throw new InvalidOperationException(
+                $"TG WS Proxy не запустился: локальный порт {endpoint.Address}:{endpoint.Port} " +
+                "не открылся за 15 секунд.");
         }
 
         await _logger.InfoAsync(
-            "TG WS Proxy запущен в фоне без отдельной иконки.",
+            $"TG WS Proxy запущен в фоне без отдельной иконки; временная папка: {tempDirectory}.",
             cancellationToken).ConfigureAwait(false);
     }
 
@@ -238,7 +250,25 @@ public sealed class ComponentProcessManager
 
     public bool IsTelegramRunning(string? version)
     {
-        return TelegramInstanceCount() > 0;
+        return TelegramInstanceCount() > 0 && IsTelegramProxyListening();
+    }
+
+    public bool IsTelegramProxyListening()
+    {
+        var endpoint = ReadTelegramProxyEndpoint();
+        try
+        {
+            return IPGlobalProperties.GetIPGlobalProperties()
+                .GetActiveTcpListeners()
+                .Any(listener => listener.Port == endpoint.Port &&
+                                 (listener.Address.Equals(endpoint.Address) ||
+                                  listener.Address.Equals(IPAddress.Any) ||
+                                  listener.Address.Equals(IPAddress.IPv6Any)));
+        }
+        catch (NetworkInformationException)
+        {
+            return false;
+        }
     }
 
     public int TelegramInstanceCount()
@@ -322,6 +352,42 @@ public sealed class ComponentProcessManager
                 }
             })
             .ToArray();
+    }
+
+    private static IPEndPoint ReadTelegramProxyEndpoint()
+    {
+        var fallback = new IPEndPoint(IPAddress.Loopback, 1080);
+        try
+        {
+            var configPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "TgWsProxy",
+                "config.json");
+            if (!File.Exists(configPath))
+            {
+                return fallback;
+            }
+
+            using var document = JsonDocument.Parse(File.ReadAllText(configPath));
+            var root = document.RootElement;
+            if (!root.TryGetProperty("host", out var hostProperty) ||
+                hostProperty.ValueKind != JsonValueKind.String ||
+                !IPAddress.TryParse(hostProperty.GetString(), out var address) ||
+                !IPAddress.IsLoopback(address) ||
+                !root.TryGetProperty("port", out var portProperty) ||
+                !portProperty.TryGetInt32(out var port) ||
+                port is < IPEndPoint.MinPort or > IPEndPoint.MaxPort)
+            {
+                return fallback;
+            }
+
+            return new IPEndPoint(address, port);
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException)
+        {
+            return fallback;
+        }
     }
 
     private static Dictionary<int, int> GetParentProcessIds()

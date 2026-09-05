@@ -52,6 +52,7 @@ Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "Создать ярлык на рабочем столе"; GroupDescription: "Дополнительные ярлыки:"; Flags: unchecked
+Name: "tcpautotuning"; Description: "Включить нормальную автонастройку TCP (рекомендуется для загрузок с GitHub)"; GroupDescription: "Сетевые настройки:"
 
 [Files]
 Source: "{#SourceRoot}\publish-win-x64\{#AppExeName}"; DestDir: "{app}"; DestName: "{#AppExeName}"; Flags: ignoreversion; Check: not IsArm64
@@ -62,6 +63,7 @@ Name: "{group}\Flowseal Manager"; Filename: "{app}\{#AppExeName}"
 Name: "{autodesktop}\Flowseal Manager"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon
 
 [Run]
+Filename: "{sys}\netsh.exe"; Parameters: "int tcp set global autotuninglevel=normal"; StatusMsg: "Настройка автонастройки TCP…"; Flags: runhidden waituntilterminated; Tasks: tcpautotuning
 Filename: "{app}\{#AppExeName}"; Description: "Запустить Flowseal Manager"; Flags: nowait postinstall skipifsilent runascurrentuser; Check: ShouldStartManager
 Filename: "{app}\{#AppExeName}"; Parameters: "--minimized"; Flags: nowait skipifnotsilent; Check: ShouldStartManager
 
